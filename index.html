@@ -1,0 +1,1604 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>The Long Simmer — POS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,500;0,600;1,500;1,600&family=Work+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#FAF6EE;
+    --panel:#FFFFFF;
+    --panel-2:#FDF9F2;
+    --sidebar:#2C190F;
+    --sidebar-2:#3A2216;
+    --ink:#2A1B12;
+    --ink-soft:#7C6C5C;
+    --line:#EEE4D5;
+    --gold:#B08D57;
+    --olive:#6E6A45;
+    --olive-dark:#5A5738;
+    --danger:#A24B3E;
+    --shadow:0 10px 30px -12px rgba(44,25,15,0.18);
+    box-sizing:border-box;
+  }
+  *{box-sizing:inherit;}
+  html,body{height:100%;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--ink);
+    font-family:'Work Sans',sans-serif;
+    -webkit-font-smoothing:antialiased;
+    padding-top:env(safe-area-inset-top,0px);
+    padding-bottom:env(safe-area-inset-bottom,0px);
+  }
+  .serif{font-family:'Fraunces',serif;}
+  a{color:inherit;}
+
+  /* ---------- App shell ---------- */
+  .app{display:grid;grid-template-columns:240px 1fr;height:100vh;min-height:640px;}
+  @media (max-width:900px){ .app{grid-template-columns:72px 1fr;} .nav-label{display:none;} }
+
+  /* ---------- Left nav ---------- */
+  .nav{
+    background:linear-gradient(180deg,var(--sidebar),var(--sidebar-2));
+    color:#EFE6D8;
+    display:flex;flex-direction:column;
+    padding:22px 16px;
+    position:relative;
+    overflow:hidden;
+  }
+  .brand{display:flex;align-items:center;gap:12px;padding:4px 6px 22px;border-bottom:1px solid rgba(239,230,216,0.12);margin-bottom:18px;}
+  .brand .pot{font-size:26px;}
+  .brand h1{font-size:17px;margin:0;line-height:1.15;letter-spacing:.2px;}
+  .brand .tag{font-size:9.5px;letter-spacing:2.5px;color:#C9B79A;margin-top:3px;}
+  .navlist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:2px;}
+  .navlist button{
+    all:unset;display:flex;align-items:center;gap:12px;
+    padding:10px 12px;border-radius:10px;cursor:pointer;
+    font-size:14px;color:#E7DCC9;width:100%;
+  }
+  .navlist button:hover{background:rgba(255,255,255,0.06);}
+  .navlist button.active{background:#EFE3CC;color:#2C190F;font-weight:600;}
+  .navlist .ic{width:18px;text-align:center;font-size:15px;}
+  .nav-bottom{margin-top:auto;text-align:center;padding-top:18px;opacity:.85;}
+  .nav-bottom .pot{font-size:34px;display:block;margin:0 auto 8px;}
+  .nav-bottom h2{font-size:14px;margin:0;font-family:'Fraunces',serif;}
+  .nav-bottom .tag{font-size:8.5px;letter-spacing:2px;color:#C9B79A;margin-top:4px;}
+
+  /* ---------- Main ---------- */
+  .main{display:grid;grid-template-rows:auto 1fr;min-width:0;}
+  .topbar{
+    background:linear-gradient(180deg,var(--sidebar),var(--sidebar-2));
+    color:#EFE6D8;padding:16px 28px;display:flex;align-items:center;justify-content:space-between;gap:20px;
+  }
+  .topbar .flow{display:flex;align-items:center;gap:14px;font-family:'Fraunces',serif;font-style:italic;color:#D9CBB0;font-size:15px;}
+  .topbar .flow .rule{width:34px;height:1px;background:rgba(217,203,176,0.4);}
+  .topbar .flow span.arrow{opacity:.5;font-style:normal;}
+  .topbar .right{display:flex;align-items:center;gap:22px;}
+  .topbar .clock{text-align:right;font-size:12px;color:#C9B79A;}
+  .topbar .clock b{display:block;font-size:15px;color:#F2E9D8;font-weight:600;}
+  .user{display:flex;align-items:center;gap:10px;}
+  .user .av{width:34px;height:34px;border-radius:50%;background:#C9B79A;display:flex;align-items:center;justify-content:center;color:#2C190F;font-weight:700;}
+  .user .who{font-size:12.5px;line-height:1.3;}
+  .user .who b{display:block;font-size:13.5px;}
+
+  #viewRoot{min-height:0;display:flex;flex-direction:column;}
+  .workspace{display:grid;grid-template-columns:1fr 380px;min-height:0;flex:1;}
+  @media (max-width:1180px){ .workspace{grid-template-columns:1fr 340px;} }
+
+  /* ---------- Ordering panel ---------- */
+  .order-area{display:flex;flex-direction:column;min-height:0;padding:20px 22px 0;overflow:hidden;}
+  .mode-row{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:16px;}
+  .modes{display:flex;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:4px;gap:4px;}
+  .modes button{all:unset;cursor:pointer;padding:9px 16px;border-radius:9px;font-size:13.5px;font-weight:600;color:var(--ink-soft);display:flex;align-items:center;gap:7px;}
+  .modes button.active{background:var(--olive);color:#fff;}
+  .field{display:flex;align-items:center;gap:8px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:9px 14px;font-size:13.5px;font-weight:600;}
+  .field select{all:unset;font-weight:700;cursor:pointer;}
+  .field .badge{background:var(--panel-2);border:1px solid var(--line);border-radius:999px;padding:4px 10px;font-size:12.5px;min-width:14px;text-align:center;}
+
+  .search{position:relative;margin-bottom:16px;}
+  .search input{
+    width:100%;padding:12px 16px 12px 40px;border-radius:12px;border:1px solid var(--line);
+    background:var(--panel);font-size:14px;font-family:inherit;color:var(--ink);
+  }
+  .search input:focus{outline:2px solid var(--gold);outline-offset:1px;}
+  .search .sic{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--ink-soft);}
+
+  .cats{display:flex;gap:20px;min-height:0;flex:1;}
+  .catlist{list-style:none;margin:0;padding:0;width:118px;flex:none;display:flex;flex-direction:column;gap:2px;overflow-y:auto;}
+  .catlist button{
+    all:unset;cursor:pointer;width:100%;padding:10px 12px;border-radius:10px;font-size:13px;font-weight:600;
+    color:var(--ink-soft);display:flex;align-items:center;gap:9px;
+  }
+  .catlist button:hover{background:var(--panel);}
+  .catlist button.active{background:var(--sidebar);color:#F2E9D8;}
+  .catlist .ic{font-size:15px;}
+
+  .grid-wrap{flex:1;min-width:0;overflow-y:auto;padding-bottom:20px;}
+  .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;}
+  @media (max-width:1400px){.grid{grid-template-columns:repeat(3,1fr);}}
+  @media (max-width:1000px){.grid{grid-template-columns:repeat(2,1fr);}}
+
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:16px;overflow:hidden;box-shadow:var(--shadow);display:flex;flex-direction:column;}
+  .thumb{
+    height:110px;display:flex;align-items:center;justify-content:center;font-size:42px;
+    background:linear-gradient(135deg,var(--tc1,#E7D3B4),var(--tc2,#C9A876));
+  }
+  .cbody{padding:12px 14px 14px;display:flex;flex-direction:column;gap:6px;flex:1;}
+  .cbody h3{margin:0;font-size:14.5px;line-height:1.3;font-weight:700;}
+  .cbody p{margin:0;font-size:12px;color:var(--ink-soft);line-height:1.4;min-height:32px;}
+  .cfoot{display:flex;align-items:center;justify-content:space-between;margin-top:auto;padding-top:4px;}
+  .price{font-weight:700;font-size:14.5px;}
+  .addbtn{
+    all:unset;cursor:pointer;width:30px;height:30px;border-radius:50%;background:var(--sidebar);
+    color:#F2E9D8;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;
+    transition:transform .12s ease;
+  }
+  .addbtn:hover{transform:scale(1.08);background:var(--olive);}
+
+  /* ---------- Order status strip ---------- */
+  .statusbar{
+    display:flex;align-items:center;gap:22px;padding:14px 28px;border-top:1px solid var(--line);
+    background:var(--panel);flex-wrap:wrap;
+  }
+  .statusbar .lbl{display:flex;align-items:center;gap:8px;font-weight:700;font-size:13px;color:var(--ink-soft);}
+  .steps{display:flex;align-items:center;gap:10px;flex:1;overflow-x:auto;}
+  .step{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--ink-soft);white-space:nowrap;}
+  .step .dot{width:22px;height:22px;border-radius:50%;border:2px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:11px;}
+  .step.done .dot{background:var(--olive);border-color:var(--olive);color:#fff;}
+  .step.current .dot{border-color:var(--olive);color:var(--olive);font-weight:700;}
+  .steplink{width:30px;height:1px;background:var(--line);}
+
+  /* ---------- Right: order panel ---------- */
+  .order-panel{background:var(--panel);border-left:1px solid var(--line);display:flex;flex-direction:column;min-height:0;}
+  .op-head{display:flex;align-items:center;justify-content:space-between;padding:18px 20px 12px;}
+  .op-head h2{margin:0;font-size:17px;}
+  .op-head .oid{font-size:12px;color:var(--ink-soft);}
+  .cart{flex:1;overflow-y:auto;padding:0 16px;display:flex;flex-direction:column;gap:10px;}
+  .empty-cart{margin:40px 20px;text-align:center;color:var(--ink-soft);font-size:13.5px;line-height:1.6;}
+  .citem{display:flex;gap:12px;align-items:center;padding:10px;border:1px solid var(--line);border-radius:14px;}
+  .cthumb{width:52px;height:52px;border-radius:10px;flex:none;display:flex;align-items:center;justify-content:center;font-size:22px;background:linear-gradient(135deg,var(--tc1,#E7D3B4),var(--tc2,#C9A876));}
+  .cinfo{flex:1;min-width:0;}
+  .cinfo .nm{display:flex;align-items:center;justify-content:space-between;gap:6px;font-weight:700;font-size:13.5px;}
+  .cinfo .nm .rm{all:unset;cursor:pointer;color:var(--ink-soft);font-size:13px;}
+  .cinfo .nm .rm:hover{color:var(--danger);}
+  .cinfo .pr{font-size:12.5px;color:var(--ink-soft);margin-top:2px;}
+  .qty{display:flex;align-items:center;gap:8px;margin-top:6px;}
+  .qty button{all:unset;cursor:pointer;width:22px;height:22px;border-radius:50%;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:13px;}
+  .qty button:hover{background:var(--panel-2);}
+  .qty .n{font-weight:700;font-size:13px;min-width:14px;text-align:center;}
+  .line-total{font-weight:700;font-size:13.5px;white-space:nowrap;}
+
+  .totals{padding:14px 20px;border-top:1px solid var(--line);display:flex;flex-direction:column;gap:9px;}
+  .trow{display:flex;align-items:center;justify-content:space-between;font-size:13.5px;color:var(--ink-soft);}
+  .trow input{width:70px;text-align:right;border:1px solid var(--line);border-radius:8px;padding:5px 8px;font-family:inherit;font-size:13px;}
+  .trow.grand{color:var(--ink);font-weight:800;font-size:19px;padding-top:6px;border-top:1px dashed var(--line);}
+
+  .actions{display:flex;gap:10px;padding:14px 20px 6px;}
+  .btn-kitchen{
+    all:unset;flex:1;text-align:center;cursor:pointer;background:var(--olive);color:#fff;font-weight:700;
+    padding:13px;border-radius:12px;font-size:14px;display:flex;align-items:center;justify-content:center;gap:8px;
+  }
+  .btn-kitchen:hover{background:var(--olive-dark);}
+  .btn-kitchen:disabled{opacity:.45;cursor:not-allowed;}
+  .btn-print{all:unset;cursor:pointer;width:46px;display:flex;align-items:center;justify-content:center;border:1px solid var(--line);border-radius:12px;}
+  .btn-print:hover{background:var(--panel-2);}
+
+  .paytype{padding:10px 20px 4px;}
+  .paytype .ptl{font-size:12.5px;font-weight:700;color:var(--ink-soft);margin-bottom:8px;}
+  .payopts{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;}
+  .payopts button{
+    all:unset;cursor:pointer;border:1px solid var(--line);border-radius:12px;padding:10px 6px;
+    display:flex;flex-direction:column;align-items:center;gap:5px;font-size:11.5px;font-weight:600;color:var(--ink-soft);
+  }
+  .payopts button .i{font-size:16px;}
+  .payopts button.active{border-color:var(--olive);background:#F1EFE3;color:var(--ink);}
+
+  .btn-complete{
+    all:unset;display:block;margin:14px 20px 18px;cursor:pointer;text-align:center;background:var(--sidebar);color:#F2E9D8;
+    font-weight:700;padding:14px;border-radius:12px;font-size:14.5px;
+  }
+  .btn-complete:hover{background:var(--olive-dark);}
+  .btn-complete:disabled{opacity:.4;cursor:not-allowed;}
+
+  .toast{
+    position:fixed;bottom:26px;left:50%;transform:translateX(-50%);background:var(--sidebar);color:#F2E9D8;
+    padding:12px 22px;border-radius:12px;font-size:13.5px;font-weight:600;box-shadow:var(--shadow);
+    opacity:0;pointer-events:none;transition:opacity .25s ease, transform .25s ease;z-index:50;max-width:80vw;text-align:center;
+  }
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(-6px);}
+
+  /* ---------- Generic module views ---------- */
+  .view{flex:1;min-height:0;overflow-y:auto;padding:22px 28px 40px;}
+  .view-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:10px;}
+  .view-head h2{margin:0;font-size:22px;}
+  .muted{color:var(--ink-soft);font-size:14px;}
+
+  .btn-primary{all:unset;cursor:pointer;background:var(--olive);color:#fff;font-weight:700;font-size:13px;padding:9px 16px;border-radius:10px;}
+  .btn-primary:hover{background:var(--olive-dark);}
+  .btn-outline{all:unset;cursor:pointer;border:1px solid var(--line);color:var(--ink);font-weight:600;font-size:13px;padding:8px 14px;border-radius:10px;}
+  .btn-outline:hover{background:var(--panel-2);}
+
+  .inline-form{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px 18px;margin-bottom:18px;box-shadow:var(--shadow);}
+  .form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:12px;}
+  .form-row{display:flex;flex-direction:column;gap:5px;justify-content:center;}
+  .form-row label{font-size:11.5px;font-weight:700;color:var(--ink-soft);display:flex;align-items:center;gap:6px;}
+  .form-row input, .form-row select, .form-row textarea{
+    border:1px solid var(--line);border-radius:9px;padding:9px 10px;font-family:inherit;font-size:13.5px;background:#fff;color:var(--ink);
+  }
+  .form-row input[type=checkbox]{width:auto;}
+  .form-row textarea{resize:vertical;min-height:40px;}
+  .form-actions{display:flex;gap:10px;}
+
+  .data-table{background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden;box-shadow:var(--shadow);}
+  .drow{display:grid;align-items:center;gap:10px;padding:11px 16px;border-bottom:1px solid var(--line);font-size:13.5px;}
+  .drow:last-child{border-bottom:none;}
+  .drow.dhead{background:var(--panel-2);font-weight:700;color:var(--ink-soft);font-size:11px;text-transform:uppercase;letter-spacing:.4px;padding:10px 16px;}
+  .dcell-actions{display:flex;gap:6px;justify-content:flex-end;}
+  .pillbtn{all:unset;cursor:pointer;width:24px;height:24px;border-radius:50%;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:12px;flex:none;}
+  .pillbtn:hover{background:var(--panel-2);}
+  .lowstock{color:var(--danger);font-weight:700;}
+  .tag-pill{display:inline-block;background:var(--panel-2);border:1px solid var(--line);border-radius:999px;padding:2px 10px;font-size:11.5px;font-weight:600;}
+
+  .menurow{grid-template-columns:44px 1.6fr 130px 90px 70px 90px;}
+  .invrow{grid-template-columns:1.4fr 80px 230px 100px 60px;}
+  .exprow{grid-template-columns:100px 120px 1.6fr 100px 50px;}
+  .suprow{grid-template-columns:1fr 140px 130px 1.4fr 50px;}
+
+  .tables-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:14px;}
+  .tcard{background:var(--panel);border:2px solid var(--line);border-radius:16px;padding:16px 14px;text-align:center;cursor:pointer;box-shadow:var(--shadow);transition:transform .1s ease;}
+  .tcard:hover{transform:translateY(-2px);}
+  .tcard .tid{font-family:'Fraunces',serif;font-size:19px;font-weight:600;}
+  .tcard .tseats{font-size:11.5px;color:var(--ink-soft);margin:2px 0 8px;}
+  .tcard .tstatus{font-size:11px;font-weight:700;padding:4px 10px;border-radius:999px;display:inline-block;}
+  .tcard .ttotal{margin-top:8px;font-weight:700;font-size:13.5px;}
+  .tcard.status-free{border-color:#CFE0BE;}
+  .tcard.status-free .tstatus{background:#E4EFD8;color:#5A7A3C;}
+  .tcard.status-occupied{border-color:#E3C79A;}
+  .tcard.status-occupied .tstatus{background:#F5E4C2;color:#95611F;}
+  .tcard.status-reserved{border-color:#C9D3E6;}
+  .tcard.status-reserved .tstatus{background:#E1E8F5;color:#3F5A8C;}
+  .tcard .tcycle{margin-top:8px;display:inline-block;}
+
+  .kgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:16px;}
+  .kcard{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:16px;box-shadow:var(--shadow);display:flex;flex-direction:column;gap:8px;}
+  .khead{display:flex;justify-content:space-between;align-items:center;font-size:14px;}
+  .kpill{background:var(--sidebar);color:#F2E9D8;font-size:10.5px;font-weight:700;padding:3px 9px;border-radius:999px;}
+  .ksub{font-size:12px;color:var(--ink-soft);}
+  .klist{margin:0;padding-left:18px;font-size:13px;line-height:1.6;}
+  .kdone{font-size:12.5px;font-weight:700;color:var(--olive);}
+
+  .stat-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:22px;}
+  .stat-card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px 18px;box-shadow:var(--shadow);display:flex;flex-direction:column;gap:6px;}
+  .stat-card .sl{font-size:11.5px;color:var(--ink-soft);font-weight:700;}
+  .stat-card b{font-size:22px;font-family:'Fraunces',serif;}
+
+  .report-cols{display:grid;grid-template-columns:1fr 1fr;gap:20px;}
+  @media (max-width:900px){.report-cols{grid-template-columns:1fr;}}
+  .report-block{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px 18px;box-shadow:var(--shadow);}
+  .report-block h3{margin:0 0 12px;font-size:14.5px;}
+  .barlist{display:flex;flex-direction:column;gap:10px;}
+  .baritem{display:grid;grid-template-columns:120px 1fr 76px;align-items:center;gap:10px;font-size:12.5px;}
+  .btrack{height:8px;background:var(--panel-2);border-radius:99px;overflow:hidden;}
+  .bfill{height:100%;background:var(--olive);border-radius:99px;}
+  .bv{text-align:right;font-weight:700;}
+
+  ::-webkit-scrollbar{width:8px;height:8px;}
+  ::-webkit-scrollbar-thumb{background:#DCCFB6;border-radius:8px;}
+
+  /* ---------- Printable receipt ---------- */
+  #receiptArea{display:none;}
+  .rc{width:280px;font-family:'Work Sans',monospace,sans-serif;color:#111;font-size:12.5px;line-height:1.5;}
+  .rc-center{text-align:center;}
+  .rc-name{font-family:'Fraunces',serif;font-size:18px;font-weight:600;margin:0;}
+  .rc-tag{font-size:9.5px;letter-spacing:1.5px;margin:2px 0 8px;}
+  .rc-rule{border-top:1px dashed #111;margin:8px 0;}
+  .rc-row{display:flex;justify-content:space-between;gap:8px;}
+  .rc-items .rc-row{margin-bottom:3px;}
+  .rc-item-name{flex:1;}
+  .rc-grand{font-weight:800;font-size:14.5px;}
+  .rc-foot{margin-top:10px;font-size:11px;}
+
+  @media print{
+    body *{visibility:hidden;}
+    #receiptArea, #receiptArea *{visibility:visible;}
+    #receiptArea{display:block;position:absolute;top:0;left:0;width:100%;padding:16px;}
+    .rc{width:100%;max-width:300px;margin:0 auto;}
+  }
+
+  /* ---------- Login screen ---------- */
+  .login-screen{
+    display:flex;align-items:center;justify-content:center;min-height:100vh;
+    background:radial-gradient(circle at top,var(--sidebar-2),var(--sidebar) 70%);
+    padding:20px;
+  }
+  .login-card{
+    background:var(--panel);border-radius:20px;box-shadow:var(--shadow);
+    padding:36px 32px;width:100%;max-width:360px;text-align:center;
+  }
+  .login-pot{font-size:38px;display:block;margin-bottom:6px;}
+  .login-card h1{margin:0;font-size:21px;}
+  .login-tag{font-size:10px;letter-spacing:2.5px;color:var(--ink-soft);margin:4px 0 22px;}
+  .login-form{display:flex;flex-direction:column;gap:12px;text-align:left;}
+  .login-form .form-row label{color:var(--ink-soft);}
+  .login-error{color:var(--danger);font-size:12.5px;min-height:16px;text-align:center;}
+  .login-submit{display:block;width:100%;text-align:center;padding:12px;font-size:14px;}
+
+  /* ---------- Logout button ---------- */
+  .user{position:relative;}
+  .logout-btn{all:unset;cursor:pointer;margin-left:6px;font-size:15px;color:#C9B79A;padding:6px;border-radius:8px;}
+  .logout-btn:hover{background:rgba(255,255,255,0.08);color:#F2E9D8;}
+</style>
+</head>
+<body>
+<div class="login-screen" id="loginScreen">
+  <div class="login-card">
+    <span class="login-pot">🍲</span>
+    <h1 class="serif" id="loginBrandName">The Long Simmer</h1>
+    <div class="login-tag" id="loginBrandTag">TRADITION, REIMAGINED</div>
+    <div class="login-form">
+      <div class="form-row"><label>Username</label><input id="loginUser" autocomplete="username" placeholder="Enter username"></div>
+      <div class="form-row"><label>Password</label><input id="loginPass" type="password" autocomplete="current-password" placeholder="Enter password"></div>
+      <div class="login-error" id="loginError"></div>
+      <button class="btn-primary login-submit" id="loginSubmit">Log in</button>
+    </div>
+  </div>
+</div>
+
+<div class="app" id="appRoot" style="display:none;">
+
+  <!-- LEFT NAV -->
+  <nav class="nav">
+    <div class="brand">
+      <span class="pot">🍲</span>
+      <div>
+        <h1 class="serif" id="brandName">The Long Simmer</h1>
+        <div class="tag" id="brandTag">TRADITION, REIMAGINED</div>
+      </div>
+    </div>
+    <ul class="navlist" id="navlist">
+      <li><button class="active" data-view="pos"><span class="ic">🧾</span><span class="nav-label">POS</span></button></li>
+      <li><button data-view="tables"><span class="ic">🪑</span><span class="nav-label">Tables</span></button></li>
+      <li><button data-view="kitchen"><span class="ic">🔔</span><span class="nav-label">Kitchen</span></button></li>
+      <li><button data-view="menu"><span class="ic">📖</span><span class="nav-label">Menu</span></button></li>
+      <li><button data-view="inventory"><span class="ic">📦</span><span class="nav-label">Inventory</span></button></li>
+      <li><button data-view="reports"><span class="ic">📊</span><span class="nav-label">Reports</span></button></li>
+      <li><button data-view="expenses"><span class="ic">💳</span><span class="nav-label">Expenses</span></button></li>
+      <li><button data-view="suppliers"><span class="ic">🚚</span><span class="nav-label">Suppliers</span></button></li>
+      <li><button data-view="settings"><span class="ic">⚙️</span><span class="nav-label">Settings</span></button></li>
+      <li><button data-view="users"><span class="ic">🔐</span><span class="nav-label">Users &amp; Roles</span></button></li>
+    </ul>
+    <div class="nav-bottom nav-label">
+      <span class="pot">🍲</span>
+      <h2 class="serif" id="navBottomName">The Long Simmer</h2>
+      <div class="tag" id="navBottomTag">TRADITION, REIMAGINED</div>
+    </div>
+  </nav>
+
+  <!-- MAIN -->
+  <div class="main">
+    <div class="topbar">
+      <div class="flow"><em>Earth</em><span class="arrow">→</span><em>Fire</em><span class="arrow">→</span><em>Time</em><span class="arrow">→</span><em>Flavor</em></div>
+      <div class="right">
+        <div class="clock"><span id="dateStr">—</span><b id="timeStr">—</b></div>
+        <div class="user">
+          <div class="av" id="userAvatar">Z</div>
+          <div class="who"><span id="userName">Zishan</span><b id="userRole">Cashier</b></div>
+          <button class="logout-btn" id="logoutBtn" title="Log out">⏻</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="viewRoot"></div>
+  </div>
+</div>
+
+<div id="receiptArea"></div>
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============================================================
+   STATIC LOOKUPS
+   ============================================================ */
+const CATS = [
+  {id:'all', name:'All', icon:'🍽️'},
+  {id:'beef', name:'Beef', icon:'🐂'},
+  {id:'chicken', name:'Chicken', icon:'🍗'},
+  {id:'rice', name:'Rice', icon:'🍚'},
+  {id:'bread', name:'Bread', icon:'🫓'},
+  {id:'sides', name:'Sides', icon:'🥗'},
+  {id:'drinks', name:'Drinks', icon:'🥤'},
+  {id:'desserts', name:'Desserts', icon:'🍮'},
+];
+const STATUSES = ['New','Confirmed','Preparing','Ready','Dispatched','Completed'];
+const PAYTYPES = [
+  {id:'cash', name:'Cash', icon:'💵'},
+  {id:'bkash', name:'bKash', icon:'📱'},
+  {id:'nagad', name:'Nagad', icon:'🟠'},
+  {id:'card', name:'Card', icon:'💳'},
+  {id:'bank', name:'Bank Transfer', icon:'🏦'},
+  {id:'other', name:'Other', icon:'⋯'},
+];
+
+/* ============================================================
+   SHARED "DATABASE" (localStorage-backed — every module reads
+   and writes here, which is what makes the modules integrated)
+   ============================================================ */
+const DB_KEY = 'tls_db_v2';
+
+function defaultDB(){
+  return {
+    orderCounter: 426,
+    settings: { name:'The Long Simmer', tagline:'TRADITION, REIMAGINED', currency:'৳', servicePct:10 },
+    users: [
+      {id:'user-superadmin', username:'The Long Simmer', password:'OurRestaurant1216', name:'Super Admin', role:'Super Admin', active:true},
+    ],
+    menu: [
+      {id:'peshawari-beef', name:'Peshawari Beef', cat:'beef', price:420, emoji:'🍖', c1:'#DDBB8A', c2:'#B98A56', desc:'Slow-cooked beef with traditional spices', active:true},
+      {id:'mint-chicken', name:'Mint-Coriander Chicken Curry', cat:'chicken', price:280, emoji:'🍛', c1:'#CFE3B0', c2:'#8FAE68', desc:'Tender chicken in a fresh herb gravy', active:true},
+      {id:'lemon-rice', name:'Lemon-Cumin Rice', cat:'rice', price:180, emoji:'🍚', c1:'#F3E7C8', c2:'#DCC594', desc:'Fragrant basmati with lemon and cumin', active:true},
+      {id:'paratha', name:'Paratha', cat:'bread', price:60, emoji:'🫓', c1:'#EAD3A3', c2:'#C99E5C', desc:'Flaky, layered flatbread', active:true},
+      {id:'beef-nihari', name:'Beef Nihari', cat:'beef', price:450, emoji:'🍲', c1:'#E3B7A6', c2:'#B0654B', desc:'Rich, slow-cooked beef with aromatic spices', active:true},
+      {id:'chicken-rezala', name:'Chicken Rezala', cat:'chicken', price:300, emoji:'🍛', c1:'#F0DFAE', c2:'#CBA85F', desc:'Mild and creamy chicken curry', active:true},
+      {id:'dal-tadka', name:'Dal Tadka', cat:'sides', price:160, emoji:'🥘', c1:'#EFDC97', c2:'#C9A94C', desc:'Yellow lentils with spices and ghee', active:true},
+      {id:'masala-fries', name:'Masala Fries', cat:'sides', price:120, emoji:'🍟', c1:'#F1D89A', c2:'#D6A94C', desc:'Crispy fries with house spice blend', active:true},
+      {id:'kachumber', name:'Kachumber Salad', cat:'sides', price:80, emoji:'🥗', c1:'#D6E6BE', c2:'#9DBB7C', desc:'Fresh cucumber, tomato, onion, herbs', active:true},
+      {id:'raita', name:'Raita', cat:'sides', price:60, emoji:'🥣', c1:'#F1EDE0', c2:'#D8CDAE', desc:'Yogurt with cucumber and spices', active:true},
+      {id:'mango-lassi', name:'Mango Lassi', cat:'drinks', price:120, emoji:'🥭', c1:'#F6D98A', c2:'#E3A73E', desc:'Rich and refreshing', active:true},
+      {id:'masala-chai', name:'Masala Chai', cat:'drinks', price:60, emoji:'☕', c1:'#DCC2A0', c2:'#A97A50', desc:'Traditional spiced tea', active:true},
+    ],
+    tables: Array.from({length:12},(_,i)=>({ id:'T'+String(i+1).padStart(2,'0'), seats: (i%3===0)?2:4, status:'free', orderId:null })),
+    orders: [],
+    inventory: [
+      {id:'inv-beef', name:'Beef', unit:'kg', qty:18, reorder:8},
+      {id:'inv-chicken', name:'Chicken', unit:'kg', qty:14, reorder:6},
+      {id:'inv-rice', name:'Basmati Rice', unit:'kg', qty:30, reorder:10},
+      {id:'inv-flour', name:'Wheat Flour', unit:'kg', qty:22, reorder:8},
+      {id:'inv-lentils', name:'Yellow Lentils', unit:'kg', qty:9, reorder:5},
+      {id:'inv-potato', name:'Potatoes', unit:'kg', qty:16, reorder:6},
+      {id:'inv-yogurt', name:'Yogurt', unit:'l', qty:6, reorder:4},
+      {id:'inv-mango', name:'Mango Pulp', unit:'l', qty:3, reorder:4},
+      {id:'inv-tea', name:'Tea Leaves', unit:'g', qty:800, reorder:300},
+      {id:'inv-spice', name:'House Spice Mix', unit:'kg', qty:5, reorder:2},
+    ],
+    expenses: [],
+    suppliers: [
+      {id:'sup-1', name:'Dhaka Fresh Meat Co.', contact:'Rafiq Islam', phone:'+880 1711-222333', items:'Beef, Mutton, Chicken'},
+      {id:'sup-2', name:'Bengal Grocers', contact:'Nasrin Akter', phone:'+880 1911-556677', items:'Rice, Lentils, Flour, Spices'},
+    ],
+  };
+}
+
+let DB;
+function loadDB(){
+  try{
+    const raw = localStorage.getItem(DB_KEY);
+    DB = raw ? JSON.parse(raw) : defaultDB();
+  }catch(e){ DB = defaultDB(); }
+  if(!DB.users || !DB.users.length){
+    DB.users = defaultDB().users;
+    saveDB();
+  }
+}
+function saveDB(){
+  try{ localStorage.setItem(DB_KEY, JSON.stringify(DB)); }catch(e){ /* storage unavailable */ }
+}
+function nextOrderId(){
+  DB.orderCounter = (DB.orderCounter||426) + 1;
+  saveDB();
+  return DB.orderCounter;
+}
+function uid(prefix){ return prefix+'-'+Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
+
+loadDB();
+
+/* ============================================================
+   AUTH: roles, session, login/logout
+   NOTE: this is a client-side/demo login gate only — the account
+   list and passwords live in this browser's localStorage, and the
+   seed password below is visible to anyone who views the page
+   source. It is fine for keeping a single till tidy while testing,
+   but it is NOT real security. Phase 2 (Supabase Auth) replaces
+   this with properly hashed, server-checked logins.
+   ============================================================ */
+const SESSION_KEY = 'tls_session';
+const ROLE_ACCESS = {
+  pos:['Super Admin','Founder','Manager','Cashier'],
+  tables:['Super Admin','Founder','Manager','Cashier'],
+  kitchen:['Super Admin','Founder','Manager','Cashier'],
+  menu:['Super Admin','Founder','Manager'],
+  inventory:['Super Admin','Founder','Manager'],
+  reports:['Super Admin','Founder','Manager'],
+  expenses:['Super Admin','Founder','Manager'],
+  suppliers:['Super Admin','Founder','Manager'],
+  settings:['Super Admin','Founder'],
+  users:['Super Admin'],
+};
+function canAccess(view){ return !!currentUser && !!ROLE_ACCESS[view] && ROLE_ACCESS[view].includes(currentUser.role); }
+
+let currentUser = null;
+function loadSession(){
+  try{
+    const uid = localStorage.getItem(SESSION_KEY);
+    if(!uid) return null;
+    const u = DB.users.find(x=>x.id===uid && x.active!==false);
+    return u || null;
+  }catch(e){ return null; }
+}
+function doLogin(username, password){
+  const u = DB.users.find(x=>x.username===username && x.password===password && x.active!==false);
+  if(!u) return false;
+  currentUser = u;
+  try{ localStorage.setItem(SESSION_KEY, u.id); }catch(e){}
+  return true;
+}
+function doLogout(){
+  currentUser = null;
+  try{ localStorage.removeItem(SESSION_KEY); }catch(e){}
+  showLogin();
+}
+function applyRoleVisibility(){
+  document.querySelectorAll('#navlist button[data-view]').forEach(b=>{
+    const view = b.dataset.view;
+    b.parentElement.style.display = canAccess(view) ? '' : 'none';
+  });
+}
+function showLogin(){
+  document.getElementById('appRoot').style.display = 'none';
+  document.getElementById('loginScreen').style.display = 'flex';
+  const err = document.getElementById('loginError'); if(err) err.textContent = '';
+  const uf = document.getElementById('loginUser'); if(uf) uf.value = '';
+  const pf = document.getElementById('loginPass'); if(pf) pf.value = '';
+}
+function showApp(){
+  document.getElementById('appRoot').style.display = 'grid';
+  document.getElementById('loginScreen').style.display = 'none';
+  applyRoleVisibility();
+  syncChrome();
+  if(!canAccess(state.view)) state.view = 'pos';
+  document.querySelectorAll('#navlist button').forEach(b=>b.classList.toggle('active', b.dataset.view===state.view));
+  render();
+}
+
+/* ============================================================
+   UI STATE (transient — not persisted; DB is the source of truth)
+   ============================================================ */
+let state = {
+  view:'pos',
+  mode:'dinein',
+  table: DB.tables.some(t=>t.id==='T07') ? 'T07' : DB.tables[0].id,
+  guests:2,
+  activeCat:'all',
+  search:'',
+  cart:[{id:'peshawari-beef',qty:1},{id:'paratha',qty:2},{id:'lemon-rice',qty:1}],
+  discount:0,
+  payType:'cash',
+  orderId: nextOrderId(),
+  status:'New',
+  addingMenu:false, editingMenuId:null,
+  addingInv:false,
+  addingExp:false,
+  addingSup:false,
+  addingTable:false,
+  addingUser:false, editingUserId:null,
+};
+
+/* ============================================================
+   CLOCK + CHROME (brand / user box, driven by settings)
+   ============================================================ */
+function tickClock(){
+  const d = new Date();
+  const days=['SUN','MON','TUE','WED','THU','FRI','SAT'];
+  const months=['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+  document.getElementById('dateStr').textContent = `${days[d.getDay()]}, ${String(d.getDate()).padStart(2,'0')} ${months[d.getMonth()]} ${d.getFullYear()}`;
+  let h=d.getHours(), ampm=h>=12?'PM':'AM'; h=h%12; if(h===0)h=12;
+  document.getElementById('timeStr').textContent = `${String(h).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')} ${ampm}`;
+}
+tickClock(); setInterval(tickClock,1000*15);
+
+function syncChrome(){
+  const s = DB.settings;
+  document.getElementById('brandName').textContent = s.name;
+  document.getElementById('brandTag').textContent = s.tagline;
+  document.getElementById('navBottomName').textContent = s.name;
+  document.getElementById('navBottomTag').textContent = s.tagline;
+  document.getElementById('userName').textContent = currentUser ? currentUser.name : '—';
+  document.getElementById('userRole').textContent = currentUser ? currentUser.role : '';
+  document.getElementById('userAvatar').textContent = currentUser ? currentUser.name.charAt(0).toUpperCase() : '?';
+  document.title = s.name + ' — POS';
+}
+
+/* ============================================================
+   TOAST
+   ============================================================ */
+let toastTimer;
+function toast(msg){
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>el.classList.remove('show'), 2200);
+}
+
+/* ============================================================
+   HELPERS
+   ============================================================ */
+function money(n){ return (DB.settings.currency||'৳') + Math.round(n||0).toLocaleString('en-IN'); }
+function findItem(id){ return DB.menu.find(m=>m.id===id); }
+function subtotal(){ return state.cart.reduce((s,c)=>{ const it=findItem(c.id); return it? s+it.price*c.qty : s; },0); }
+function serviceCharge(){ return Math.round((subtotal()-state.discount) * ((DB.settings.servicePct||0)/100)); }
+function grandTotal(){ return Math.max(0, subtotal() - state.discount + serviceCharge()); }
+function val(id){ return document.getElementById(id).value.trim(); }
+function escapeAttr(str){ return String(str==null?'':str).replace(/"/g,'&quot;'); }
+function timeAgo(iso){
+  const mins = Math.max(0, Math.round((Date.now()-new Date(iso).getTime())/60000));
+  if(mins<1) return 'just now';
+  if(mins<60) return mins+' min ago';
+  return Math.floor(mins/60)+' hr '+(mins%60)+' min ago';
+}
+
+/* ============================================================
+   ORDER / TABLE LINKING
+   ============================================================ */
+function loadTableIntoState(tableId){
+  const t = DB.tables.find(x=>x.id===tableId);
+  if(!t) return;
+  if(t.orderId){
+    const ord = DB.orders.find(o=>o.id===t.orderId && o.status!=='Completed');
+    if(ord){
+      state.cart = ord.items.map(it=>({id:it.id, qty:it.qty})).filter(c=>findItem(c.id));
+      state.discount = ord.discount||0;
+      state.payType = ord.payType||'cash';
+      state.orderId = ord.id;
+      state.status = ord.status;
+      state.mode = ord.mode||'dinein';
+      state.table = t.id;
+      return;
+    }
+  }
+  state.cart=[]; state.discount=0; state.payType='cash';
+  state.orderId = nextOrderId(); state.status='New'; state.table=t.id;
+}
+
+function sendToKitchen(){
+  if(state.cart.length===0) return;
+  const itemsSnapshot = state.cart.map(c=>{ const m=findItem(c.id); return {id:c.id,name:m.name,price:m.price,qty:c.qty}; });
+  let order = DB.orders.find(o=>o.id===state.orderId);
+  if(order){
+    Object.assign(order, {
+      items:itemsSnapshot, discount:state.discount, payType:state.payType, mode:state.mode, table:state.table,
+      subtotal:subtotal(), service:serviceCharge(), total:grandTotal(), updatedAt:new Date().toISOString()
+    });
+    if(order.status==='New') order.status='Confirmed';
+  } else {
+    order = {
+      id: state.orderId, mode: state.mode, table: state.table, guests: state.guests,
+      items: itemsSnapshot, subtotal: subtotal(), discount: state.discount, service: serviceCharge(),
+      total: grandTotal(), payType: state.payType, status:'Confirmed',
+      createdAt: new Date().toISOString(), updatedAt: new Date().toISOString()
+    };
+    DB.orders.push(order);
+  }
+  state.status = order.status;
+  if(state.mode==='dinein'){
+    const t = DB.tables.find(x=>x.id===state.table);
+    if(t){ t.orderId = order.id; t.status = 'occupied'; }
+  }
+  saveDB();
+  renderStatus();
+  toast('Order #'+String(state.orderId).padStart(5,'0')+' sent to kitchen 🔥');
+}
+
+function completeOrder(){
+  if(state.cart.length===0) return;
+  const itemsSnapshot = state.cart.map(c=>{ const m=findItem(c.id); return {id:c.id,name:m.name,price:m.price,qty:c.qty}; });
+  let order = DB.orders.find(o=>o.id===state.orderId);
+  if(!order){
+    order = { id: state.orderId, mode: state.mode, table: state.table, guests: state.guests, items: itemsSnapshot, createdAt: new Date().toISOString() };
+    DB.orders.push(order);
+  } else {
+    order.items = itemsSnapshot;
+  }
+  Object.assign(order, {
+    discount: state.discount, payType: state.payType, mode: state.mode, table: state.table,
+    subtotal: subtotal(), service: serviceCharge(), total: grandTotal(),
+    status:'Completed', updatedAt: new Date().toISOString()
+  });
+  if(state.mode==='dinein'){
+    const t = DB.tables.find(x=>x.id===state.table);
+    if(t){ t.orderId=null; t.status='free'; }
+  }
+  saveDB();
+  state.status='Completed';
+  renderStatus();
+  toast('Payment received — order complete ✓');
+  printReceipt();
+  setTimeout(()=>{
+    state.cart=[]; state.discount=0; state.status='New';
+    state.orderId = nextOrderId();
+    render();
+  }, 1400);
+}
+
+/* ============================================================
+   ROUTER
+   ============================================================ */
+document.getElementById('navlist').addEventListener('click', e=>{
+  const btn = e.target.closest('button[data-view]');
+  if(!btn) return;
+  if(!canAccess(btn.dataset.view)){ toast("You don't have access to this section"); return; }
+  state.view = btn.dataset.view;
+  document.querySelectorAll('#navlist button').forEach(b=>b.classList.toggle('active', b===btn));
+  render();
+});
+document.getElementById('logoutBtn').addEventListener('click', ()=>{
+  if(!confirm('Log out?')) return;
+  doLogout();
+});
+
+function goToPOS(){
+  state.view='pos';
+  document.querySelectorAll('#navlist button').forEach(b=>b.classList.toggle('active', b.dataset.view==='pos'));
+  render();
+}
+
+function render(){
+  if(!canAccess(state.view)) state.view = 'pos';
+  const root = document.getElementById('viewRoot');
+  if(state.view==='pos'){ root.innerHTML = posTemplate(); wirePOS(); }
+  else if(state.view==='tables'){ root.innerHTML = tablesTemplate(); wireTables(); }
+  else if(state.view==='kitchen'){ root.innerHTML = kitchenTemplate(); renderKitchen(); }
+  else if(state.view==='menu'){ root.innerHTML = menuTemplate(); wireMenu(); }
+  else if(state.view==='inventory'){ root.innerHTML = inventoryTemplate(); wireInventory(); }
+  else if(state.view==='reports'){ root.innerHTML = reportsTemplate(); }
+  else if(state.view==='expenses'){ root.innerHTML = expensesTemplate(); wireExpenses(); }
+  else if(state.view==='suppliers'){ root.innerHTML = suppliersTemplate(); wireSuppliers(); }
+  else if(state.view==='settings'){ root.innerHTML = settingsTemplate(); wireSettings(); }
+  else if(state.view==='users'){ root.innerHTML = usersTemplate(); wireUsers(); }
+}
+
+/* ============================================================
+   POS VIEW
+   ============================================================ */
+function posTemplate(){
+  return `
+  <div class="workspace">
+    <div class="order-area">
+      <div class="mode-row">
+        <div class="modes" id="modes">
+          <button data-mode="dinein" class="${state.mode==='dinein'?'active':''}">🛋️ Dine In</button>
+          <button data-mode="takeaway" class="${state.mode==='takeaway'?'active':''}">🛍️ Takeaway</button>
+          <button data-mode="delivery" class="${state.mode==='delivery'?'active':''}">🛵 Delivery</button>
+        </div>
+        <div class="field">Table
+          <select id="tableSel">
+            ${DB.tables.map(t=>`<option value="${t.id}" ${t.id===state.table?'selected':''}>${t.id}</option>`).join('')}
+          </select>
+        </div>
+        <div class="field">👥
+          <button class="pillbtn" id="guestDec">−</button>
+          <span class="badge" id="guestBadge">${state.guests}</span>
+          <button class="pillbtn" id="guestInc">+</button>
+        </div>
+      </div>
+
+      <div class="search">
+        <span class="sic">🔍</span>
+        <input id="searchInput" placeholder="Search menu items..." value="${escapeAttr(state.search)}">
+      </div>
+
+      <div class="cats">
+        <ul class="catlist" id="catlist">
+          ${CATS.map(c=>`<li><button data-cat="${c.id}" class="${state.activeCat===c.id?'active':''}"><span class="ic">${c.icon}</span>${c.name}</button></li>`).join('')}
+        </ul>
+        <div class="grid-wrap">
+          <div class="grid" id="menuGrid"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="order-panel">
+      <div class="op-head">
+        <h2 class="serif">Current Order</h2>
+        <span class="oid">#${String(state.orderId).padStart(5,'0')}</span>
+      </div>
+      <div class="cart" id="cartList"></div>
+      <div class="totals">
+        <div class="trow"><span>Subtotal</span><span id="subtotalVal">৳0</span></div>
+        <div class="trow"><span>Discount</span><input id="discountInput" type="number" min="0" value="${state.discount}"></div>
+        <div class="trow"><span>Service Charge (${DB.settings.servicePct||0}%)</span><span id="serviceVal">৳0</span></div>
+        <div class="trow grand"><span>Total</span><span id="grandVal">৳0</span></div>
+      </div>
+      <div class="actions">
+        <button class="btn-kitchen" id="sendKitchenBtn">🔥 Send to Kitchen</button>
+        <button class="btn-print" title="Print" id="printBtn">🖨️</button>
+      </div>
+      <div class="paytype">
+        <div class="ptl">Payment Type</div>
+        <div class="payopts" id="payopts">
+          ${PAYTYPES.map(p=>`<button data-pay="${p.id}" class="${state.payType===p.id?'active':''}"><span class="i">${p.icon}</span>${p.name}</button>`).join('')}
+        </div>
+      </div>
+      <button class="btn-complete" id="completeBtn">✓ Complete Order</button>
+    </div>
+  </div>
+
+  <div class="statusbar">
+    <span class="lbl">📋 Order Status</span>
+    <div class="steps" id="statusSteps"></div>
+  </div>
+  `;
+}
+
+function wirePOS(){
+  renderMenuGrid();
+  renderCart();
+  renderTotals();
+  renderStatus();
+
+  document.getElementById('modes').addEventListener('click', e=>{
+    const b = e.target.closest('button[data-mode]'); if(!b) return;
+    state.mode = b.dataset.mode; render();
+  });
+  document.getElementById('tableSel').addEventListener('change', e=>{
+    loadTableIntoState(e.target.value); render();
+  });
+  document.getElementById('guestInc').addEventListener('click', ()=>{ state.guests=Math.min(20,state.guests+1); document.getElementById('guestBadge').textContent=state.guests; });
+  document.getElementById('guestDec').addEventListener('click', ()=>{ state.guests=Math.max(1,state.guests-1); document.getElementById('guestBadge').textContent=state.guests; });
+  document.getElementById('searchInput').addEventListener('input', e=>{ state.search = e.target.value; renderMenuGrid(); });
+  document.getElementById('catlist').addEventListener('click', e=>{
+    const b = e.target.closest('button[data-cat]'); if(!b) return;
+    state.activeCat = b.dataset.cat;
+    document.querySelectorAll('#catlist button').forEach(x=>x.classList.toggle('active', x===b));
+    renderMenuGrid();
+  });
+  document.getElementById('discountInput').addEventListener('input', e=>{
+    state.discount = Math.max(0, parseInt(e.target.value||'0',10));
+    renderTotals();
+  });
+  document.getElementById('payopts').addEventListener('click', e=>{
+    const b = e.target.closest('button[data-pay]'); if(!b) return;
+    state.payType = b.dataset.pay;
+    document.querySelectorAll('#payopts button').forEach(x=>x.classList.toggle('active', x===b));
+  });
+  document.getElementById('printBtn').addEventListener('click', printReceipt);
+  document.getElementById('sendKitchenBtn').addEventListener('click', sendToKitchen);
+  document.getElementById('completeBtn').addEventListener('click', completeOrder);
+}
+
+function renderMenuGrid(){
+  const grid = document.getElementById('menuGrid');
+  const q = state.search.trim().toLowerCase();
+  const items = DB.menu.filter(m=>
+    m.active!==false &&
+    (state.activeCat==='all' || m.cat===state.activeCat) &&
+    (!q || m.name.toLowerCase().includes(q))
+  );
+  grid.innerHTML = items.map(m=>`
+    <div class="card">
+      <div class="thumb" style="--tc1:${m.c1};--tc2:${m.c2}">${m.emoji}</div>
+      <div class="cbody">
+        <h3>${m.name}</h3>
+        <p>${m.desc||''}</p>
+        <div class="cfoot">
+          <span class="price">${money(m.price)}</span>
+          <button class="addbtn" data-add="${m.id}">+</button>
+        </div>
+      </div>
+    </div>
+  `).join('') || `<p style="color:var(--ink-soft);padding:20px;">No items match. Try another search, or add items in Menu Manager.</p>`;
+
+  grid.querySelectorAll('[data-add]').forEach(btn=>{
+    btn.addEventListener('click', ()=>addToCart(btn.dataset.add));
+  });
+}
+
+function addToCart(id){
+  const existing = state.cart.find(c=>c.id===id);
+  if(existing) existing.qty++;
+  else state.cart.push({id, qty:1});
+  renderCart(); renderTotals();
+  toast(findItem(id).name + ' added');
+}
+function changeQty(id, delta){
+  const c = state.cart.find(c=>c.id===id);
+  if(!c) return;
+  c.qty += delta;
+  if(c.qty<=0) state.cart = state.cart.filter(x=>x.id!==id);
+  renderCart(); renderTotals();
+}
+function removeFromCart(id){
+  state.cart = state.cart.filter(c=>c.id!==id);
+  renderCart(); renderTotals();
+}
+
+function renderCart(){
+  const el = document.getElementById('cartList');
+  if(!el) return;
+  if(state.cart.length===0){
+    el.innerHTML = `<div class="empty-cart">No items yet.<br>Tap the + on a menu item to start this order.</div>`;
+    return;
+  }
+  el.innerHTML = state.cart.map(c=>{
+    const m = findItem(c.id);
+    if(!m) return '';
+    return `
+    <div class="citem">
+      <div class="cthumb" style="--tc1:${m.c1};--tc2:${m.c2}">${m.emoji}</div>
+      <div class="cinfo">
+        <div class="nm"><span>${m.name}</span><button class="rm" data-rm="${m.id}">🗑</button></div>
+        <div class="pr">${money(m.price)}</div>
+        <div class="qty">
+          <button data-dec="${m.id}">−</button>
+          <span class="n">${c.qty}</span>
+          <button data-inc="${m.id}">+</button>
+        </div>
+      </div>
+      <div class="line-total">${money(m.price*c.qty)}</div>
+    </div>`;
+  }).join('');
+
+  el.querySelectorAll('[data-inc]').forEach(b=>b.addEventListener('click',()=>changeQty(b.dataset.inc,1)));
+  el.querySelectorAll('[data-dec]').forEach(b=>b.addEventListener('click',()=>changeQty(b.dataset.dec,-1)));
+  el.querySelectorAll('[data-rm]').forEach(b=>b.addEventListener('click',()=>removeFromCart(b.dataset.rm)));
+}
+
+function renderTotals(){
+  const sv = document.getElementById('subtotalVal'); if(sv) sv.textContent = money(subtotal());
+  const scv = document.getElementById('serviceVal'); if(scv) scv.textContent = money(serviceCharge());
+  const gv = document.getElementById('grandVal'); if(gv) gv.textContent = money(grandTotal());
+  const sendBtn = document.getElementById('sendKitchenBtn'); if(sendBtn) sendBtn.disabled = state.cart.length===0;
+  const compBtn = document.getElementById('completeBtn'); if(compBtn) compBtn.disabled = state.cart.length===0;
+}
+
+function renderStatus(){
+  const el = document.getElementById('statusSteps');
+  if(!el) return;
+  const curIdx = STATUSES.indexOf(state.status);
+  el.innerHTML = STATUSES.map((s,i)=>{
+    const cls = i<curIdx ? 'done' : (i===curIdx ? 'current':'');
+    const dot = i<curIdx ? '✓' : (i+1);
+    const link = i>0 ? '<span class="steplink"></span>' : '';
+    return `${link}<div class="step ${cls}"><span class="dot">${dot}</span>${s}</div>`;
+  }).join('');
+}
+
+/* ---------- Receipt printing ---------- */
+function buildReceiptHTML(){
+  const items = state.cart.map(c=>{ const m=findItem(c.id); return m ? {name:m.name, qty:c.qty, price:m.price} : null; }).filter(Boolean);
+  const sub = subtotal(), disc = state.discount, svc = serviceCharge(), grand = grandTotal();
+  const now = new Date();
+  const dateStr = now.toLocaleDateString('en-GB') + '  ' + now.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+  const where = state.mode==='dinein' ? ('Table '+state.table) : (state.mode==='takeaway' ? 'Takeaway' : 'Delivery');
+  const payName = (PAYTYPES.find(p=>p.id===state.payType)||{}).name || state.payType;
+  return `
+    <div class="rc">
+      <div class="rc-center">
+        <p class="rc-name">${DB.settings.name}</p>
+        <div class="rc-tag">${(DB.settings.tagline||'').toUpperCase()}</div>
+      </div>
+      <div class="rc-rule"></div>
+      <div class="rc-row"><span>Order #${String(state.orderId).padStart(5,'0')}</span><span>${where}</span></div>
+      <div class="rc-row"><span>${dateStr}</span><span>${currentUser ? currentUser.name : ''}</span></div>
+      <div class="rc-rule"></div>
+      <div class="rc-items">
+        ${items.length ? items.map(it=>`<div class="rc-row"><span class="rc-item-name">${it.qty}× ${it.name}</span><span>${money(it.price*it.qty)}</span></div>`).join('') : '<div class="rc-row"><span>No items</span></div>'}
+      </div>
+      <div class="rc-rule"></div>
+      <div class="rc-row"><span>Subtotal</span><span>${money(sub)}</span></div>
+      ${disc>0 ? `<div class="rc-row"><span>Discount</span><span>-${money(disc)}</span></div>` : ''}
+      <div class="rc-row"><span>Service Charge (${DB.settings.servicePct||0}%)</span><span>${money(svc)}</span></div>
+      <div class="rc-rule"></div>
+      <div class="rc-row rc-grand"><span>Total</span><span>${money(grand)}</span></div>
+      <div class="rc-row"><span>Payment</span><span>${payName}</span></div>
+      <div class="rc-rule"></div>
+      <div class="rc-foot rc-center">Thank you for dining with us!<br>Earth → Fire → Time → Flavor</div>
+    </div>
+  `;
+}
+function printReceipt(){
+  if(state.cart.length===0){ toast('Nothing to print yet'); return; }
+  document.getElementById('receiptArea').innerHTML = buildReceiptHTML();
+  window.print();
+}
+
+/* ============================================================
+   TABLES VIEW
+   ============================================================ */
+function tablesTemplate(){
+  return `<div class="view">
+    <div class="view-head"><h2 class="serif">Tables</h2><button class="btn-primary" id="addTableBtn">+ Add table</button></div>
+    ${state.addingTable ? tableFormTemplate() : ''}
+    <div class="tables-grid" id="tablesGrid"></div>
+  </div>`;
+}
+function tableFormTemplate(){
+  return `<div class="inline-form">
+    <h3 style="margin-top:0;font-size:14.5px;">New table</h3>
+    <div class="form-grid">
+      <div class="form-row"><label>Table ID</label><input id="tfId" placeholder="e.g. T13"></div>
+      <div class="form-row"><label>Seats</label><input id="tfSeats" type="number" min="1" value="4"></div>
+    </div>
+    <div class="form-actions">
+      <button class="btn-primary" id="tfSave">Add table</button>
+      <button class="btn-outline" id="tfCancel">Cancel</button>
+    </div>
+  </div>`;
+}
+function wireTables(){
+  document.getElementById('addTableBtn').addEventListener('click', ()=>{ state.addingTable=!state.addingTable; render(); });
+  if(state.addingTable){
+    document.getElementById('tfCancel').addEventListener('click', ()=>{ state.addingTable=false; render(); });
+    document.getElementById('tfSave').addEventListener('click', ()=>{
+      const id = val('tfId'); if(!id){ toast('Enter a table ID'); return; }
+      if(DB.tables.find(t=>t.id===id)){ toast('That table ID already exists'); return; }
+      DB.tables.push({ id, seats: parseInt(val('tfSeats'))||4, status:'free', orderId:null });
+      saveDB(); state.addingTable=false; render(); toast('Table added');
+    });
+  }
+  renderTablesGrid();
+}
+function renderTablesGrid(){
+  const grid = document.getElementById('tablesGrid');
+  grid.innerHTML = DB.tables.map(t=>{
+    const ord = t.orderId ? DB.orders.find(o=>o.id===t.orderId) : null;
+    return `<div class="tcard status-${t.status}" data-table="${t.id}">
+      <div class="tid">${t.id}</div>
+      <div class="tseats">${t.seats} seats</div>
+      <div class="tstatus">${t.status.charAt(0).toUpperCase()+t.status.slice(1)}</div>
+      ${ord ? `<div class="ttotal">${money(ord.total)}</div>` : ''}
+      ${!t.orderId ? `<button class="btn-outline tcycle" data-cycle="${t.id}">${t.status==='free'?'Mark reserved':'Mark free'}</button>` : ''}
+    </div>`;
+  }).join('');
+
+  grid.querySelectorAll('.tcard').forEach(card=>{
+    card.addEventListener('click', (e)=>{
+      if(e.target.closest('[data-cycle]')) return;
+      loadTableIntoState(card.dataset.table);
+      goToPOS();
+    });
+  });
+  grid.querySelectorAll('[data-cycle]').forEach(b=>{
+    b.addEventListener('click', (e)=>{
+      e.stopPropagation();
+      const t = DB.tables.find(x=>x.id===b.dataset.cycle);
+      t.status = t.status==='free' ? 'reserved' : 'free';
+      saveDB(); renderTablesGrid();
+    });
+  });
+}
+
+/* ============================================================
+   KITCHEN VIEW
+   ============================================================ */
+function kitchenTemplate(){
+  return `<div class="view">
+    <div class="view-head"><h2 class="serif">Kitchen Display</h2></div>
+    <div class="kgrid" id="kGrid"></div>
+  </div>`;
+}
+function nextStatus(s){
+  const flow = ['Confirmed','Preparing','Ready','Dispatched'];
+  const i = flow.indexOf(s);
+  if(i===-1 || i===flow.length-1) return null;
+  return flow[i+1];
+}
+function renderKitchen(){
+  const grid = document.getElementById('kGrid');
+  const active = DB.orders.filter(o=>o.status!=='Completed').sort((a,b)=> new Date(a.createdAt)-new Date(b.createdAt));
+  if(active.length===0){
+    grid.innerHTML = `<p class="muted">No active orders. Orders sent from POS ("Send to Kitchen") will appear here.</p>`;
+    return;
+  }
+  grid.innerHTML = active.map(o=>{
+    const next = nextStatus(o.status);
+    const where = o.mode==='dinein' ? 'Table '+o.table : (o.mode==='takeaway' ? 'Takeaway' : 'Delivery');
+    return `<div class="kcard">
+      <div class="khead"><b>#${String(o.id).padStart(5,'0')}</b><span class="kpill">${o.status}</span></div>
+      <div class="ksub">${where} · ${timeAgo(o.createdAt)}</div>
+      <ul class="klist">${o.items.map(it=>`<li>${it.qty}× ${it.name}</li>`).join('')}</ul>
+      ${next ? `<button class="btn-primary" data-advance="${o.id}">Mark ${next}</button>` : `<span class="kdone">Ready for payment at POS</span>`}
+    </div>`;
+  }).join('');
+
+  grid.querySelectorAll('[data-advance]').forEach(b=>b.addEventListener('click', ()=>{
+    const id = parseInt(b.dataset.advance,10);
+    const o = DB.orders.find(x=>x.id===id); if(!o) return;
+    const n = nextStatus(o.status); if(!n) return;
+    o.status = n; o.updatedAt = new Date().toISOString();
+    saveDB();
+    if(state.orderId===id) state.status = n;
+    renderKitchen();
+    toast('Order #'+String(id).padStart(5,'0')+' → '+n);
+  }));
+}
+
+/* ============================================================
+   MENU MANAGER VIEW
+   ============================================================ */
+function menuTemplate(){
+  return `<div class="view">
+    <div class="view-head"><h2 class="serif">Menu Manager</h2><button class="btn-primary" id="addMenuBtn">+ Add item</button></div>
+    ${state.addingMenu ? menuFormTemplate() : ''}
+    <div class="data-table" id="menuTableWrap"></div>
+  </div>`;
+}
+function menuFormTemplate(){
+  const editing = state.editingMenuId ? DB.menu.find(m=>m.id===state.editingMenuId) : null;
+  const d = editing || {name:'',cat:'beef',price:0,emoji:'🍽️',desc:'',active:true};
+  return `<div class="inline-form">
+    <h3 style="margin-top:0;font-size:14.5px;">${editing?'Edit item':'New menu item'}</h3>
+    <div class="form-grid">
+      <div class="form-row"><label>Name</label><input id="mfName" value="${escapeAttr(d.name)}"></div>
+      <div class="form-row"><label>Category</label><select id="mfCat">${CATS.filter(c=>c.id!=='all').map(c=>`<option value="${c.id}" ${c.id===d.cat?'selected':''}>${c.name}</option>`).join('')}</select></div>
+      <div class="form-row"><label>Price (${DB.settings.currency})</label><input id="mfPrice" type="number" min="0" value="${d.price}"></div>
+      <div class="form-row"><label>Emoji</label><input id="mfEmoji" value="${escapeAttr(d.emoji)}" maxlength="4"></div>
+      <div class="form-row" style="grid-column:1/-1;"><label>Description</label><input id="mfDesc" value="${escapeAttr(d.desc)}"></div>
+      <div class="form-row"><label><input type="checkbox" id="mfActive" ${d.active!==false?'checked':''}> Active (visible in POS)</label></div>
+    </div>
+    <div class="form-actions">
+      <button class="btn-primary" id="mfSave">${editing?'Save changes':'Add item'}</button>
+      <button class="btn-outline" id="mfCancel">Cancel</button>
+    </div>
+  </div>`;
+}
+function wireMenu(){
+  document.getElementById('addMenuBtn').addEventListener('click', ()=>{
+    state.editingMenuId = null; state.addingMenu = !state.addingMenu; render();
+  });
+  if(state.addingMenu){
+    document.getElementById('mfCancel').addEventListener('click', ()=>{ state.addingMenu=false; state.editingMenuId=null; render(); });
+    document.getElementById('mfSave').addEventListener('click', ()=>{
+      const name = val('mfName'); if(!name){ toast('Name is required'); return; }
+      const cat = document.getElementById('mfCat').value;
+      const price = parseFloat(val('mfPrice'))||0;
+      const emoji = val('mfEmoji') || '🍽️';
+      const desc = val('mfDesc');
+      const active = document.getElementById('mfActive').checked;
+      if(state.editingMenuId){
+        Object.assign(DB.menu.find(m=>m.id===state.editingMenuId), {name,cat,price,emoji,desc,active});
+      } else {
+        DB.menu.push({ id: uid('item'), name, cat, price, emoji, desc, active, c1:'#E7D3B4', c2:'#C9A876' });
+      }
+      saveDB();
+      state.addingMenu=false; state.editingMenuId=null;
+      render();
+      toast('Menu updated');
+    });
+  }
+  renderMenuTable();
+}
+function renderMenuTable(){
+  const wrap = document.getElementById('menuTableWrap');
+  wrap.innerHTML = `
+    <div class="drow dhead menurow"><span></span><span>Name</span><span>Category</span><span>Price</span><span>Active</span><span></span></div>
+    ${DB.menu.map(m=>`
+      <div class="drow menurow">
+        <span style="font-size:20px;">${m.emoji}</span>
+        <span>${m.name}<div class="muted" style="font-size:11.5px;">${m.desc||''}</div></span>
+        <span><span class="tag-pill">${(CATS.find(c=>c.id===m.cat)||{}).name || m.cat}</span></span>
+        <span>${money(m.price)}</span>
+        <span>${m.active!==false ? '✅' : '🚫'}</span>
+        <span class="dcell-actions">
+          <button class="pillbtn" data-edit="${m.id}" title="Edit">✎</button>
+          <button class="pillbtn" data-del="${m.id}" title="Delete">🗑</button>
+        </span>
+      </div>
+    `).join('')}
+  `;
+  wrap.querySelectorAll('[data-edit]').forEach(b=>b.addEventListener('click', ()=>{
+    state.editingMenuId = b.dataset.edit; state.addingMenu = true; render();
+  }));
+  wrap.querySelectorAll('[data-del]').forEach(b=>b.addEventListener('click', ()=>{
+    if(!confirm('Remove this item from the menu?')) return;
+    DB.menu = DB.menu.filter(m=>m.id!==b.dataset.del);
+    saveDB(); renderMenuTable(); toast('Item removed');
+  }));
+}
+
+/* ============================================================
+   INVENTORY VIEW
+   ============================================================ */
+function inventoryTemplate(){
+  return `<div class="view">
+    <div class="view-head"><h2 class="serif">Inventory</h2><button class="btn-primary" id="addInvBtn">+ Add stock item</button></div>
+    ${state.addingInv ? invFormTemplate() : ''}
+    <div class="data-table" id="invTableWrap"></div>
+  </div>`;
+}
+function invFormTemplate(){
+  return `<div class="inline-form">
+    <h3 style="margin-top:0;font-size:14.5px;">New stock item</h3>
+    <div class="form-grid">
+      <div class="form-row"><label>Name</label><input id="ifName"></div>
+      <div class="form-row"><label>Unit</label><select id="ifUnit"><option>g</option><option>kg</option><option>ml</option><option>l</option><option>pcs</option></select></div>
+      <div class="form-row"><label>Quantity in stock</label><input id="ifQty" type="number" min="0" value="0"></div>
+      <div class="form-row"><label>Reorder level</label><input id="ifReorder" type="number" min="0" value="0"></div>
+    </div>
+    <div class="form-actions">
+      <button class="btn-primary" id="ifSave">Add item</button>
+      <button class="btn-outline" id="ifCancel">Cancel</button>
+    </div>
+  </div>`;
+}
+function wireInventory(){
+  document.getElementById('addInvBtn').addEventListener('click', ()=>{ state.addingInv=!state.addingInv; render(); });
+  if(state.addingInv){
+    document.getElementById('ifCancel').addEventListener('click', ()=>{ state.addingInv=false; render(); });
+    document.getElementById('ifSave').addEventListener('click', ()=>{
+      const name = val('ifName'); if(!name){ toast('Name is required'); return; }
+      DB.inventory.push({ id: uid('inv'), name, unit: document.getElementById('ifUnit').value, qty: parseFloat(val('ifQty'))||0, reorder: parseFloat(val('ifReorder'))||0 });
+      saveDB(); state.addingInv=false; render(); toast('Stock item added');
+    });
+  }
+  renderInvTable();
+}
+function renderInvTable(){
+  const wrap = document.getElementById('invTableWrap');
+  wrap.innerHTML = `
+    <div class="drow dhead invrow"><span>Name</span><span>Unit</span><span>Quantity</span><span>Reorder at</span><span></span></div>
+    ${DB.inventory.map(it=>`
+      <div class="drow invrow">
+        <span>${it.name}</span>
+        <span>${it.unit}</span>
+        <span class="${it.qty<=it.reorder?'lowstock':''}">
+          <button class="pillbtn" data-dec="${it.id}">−</button>
+          <b style="margin:0 8px;">${it.qty}</b>
+          <button class="pillbtn" data-inc="${it.id}">+</button>
+          ${it.qty<=it.reorder ? ' ⚠️ Low' : ''}
+        </span>
+        <span>${it.reorder}</span>
+        <span class="dcell-actions"><button class="pillbtn" data-del="${it.id}" title="Delete">🗑</button></span>
+      </div>
+    `).join('') || `<div class="drow"><span class="muted">No stock items yet.</span></div>`}
+  `;
+  wrap.querySelectorAll('[data-inc]').forEach(b=>b.addEventListener('click', ()=>{ adjustInv(b.dataset.inc, 1); }));
+  wrap.querySelectorAll('[data-dec]').forEach(b=>b.addEventListener('click', ()=>{ adjustInv(b.dataset.dec, -1); }));
+  wrap.querySelectorAll('[data-del]').forEach(b=>b.addEventListener('click', ()=>{
+    if(!confirm('Remove this stock item?')) return;
+    DB.inventory = DB.inventory.filter(x=>x.id!==b.dataset.del);
+    saveDB(); renderInvTable(); toast('Stock item removed');
+  }));
+}
+function adjustInv(id, delta){
+  const it = DB.inventory.find(x=>x.id===id); if(!it) return;
+  it.qty = Math.max(0, it.qty+delta);
+  saveDB(); renderInvTable();
+}
+
+/* ============================================================
+   REPORTS VIEW
+   ============================================================ */
+function reportsTemplate(){
+  const completed = DB.orders.filter(o=>o.status==='Completed');
+  if(completed.length===0){
+    return `<div class="view"><div class="view-head"><h2 class="serif">Reports</h2></div>
+      <p class="muted">No completed orders yet. Once you complete an order's payment in POS, sales data will appear here.</p></div>`;
+  }
+  const revenue = completed.reduce((s,o)=>s+o.total,0);
+  const count = completed.length;
+  const avg = count ? Math.round(revenue/count) : 0;
+
+  const itemAgg = {};
+  completed.forEach(o=>o.items.forEach(it=>{ itemAgg[it.name]=(itemAgg[it.name]||0)+it.qty; }));
+  const topItems = Object.entries(itemAgg).sort((a,b)=>b[1]-a[1]).slice(0,6);
+  const maxQty = topItems.length ? topItems[0][1] : 1;
+
+  const payAgg = {};
+  completed.forEach(o=>{ payAgg[o.payType]=(payAgg[o.payType]||0)+o.total; });
+  const payEntries = Object.entries(payAgg).sort((a,b)=>b[1]-a[1]);
+  const maxPay = Math.max(1, ...payEntries.map(e=>e[1]));
+
+  return `<div class="view">
+    <div class="view-head"><h2 class="serif">Reports</h2></div>
+    <div class="stat-cards">
+      <div class="stat-card"><span class="sl">Total Revenue</span><b>${money(revenue)}</b></div>
+      <div class="stat-card"><span class="sl">Orders Completed</span><b>${count}</b></div>
+      <div class="stat-card"><span class="sl">Average Order</span><b>${money(avg)}</b></div>
+    </div>
+    <div class="report-cols">
+      <div class="report-block">
+        <h3>Top Selling Items</h3>
+        <div class="barlist">${topItems.map(([name,qty])=>`
+          <div class="baritem"><span>${name}</span><div class="btrack"><div class="bfill" style="width:${(qty/maxQty*100)}%"></div></div><span class="bv">${qty}</span></div>
+        `).join('')}</div>
+      </div>
+      <div class="report-block">
+        <h3>Revenue by Payment Type</h3>
+        <div class="barlist">${payEntries.map(([type,amt])=>`
+          <div class="baritem"><span>${(PAYTYPES.find(p=>p.id===type)||{}).name || type}</span><div class="btrack"><div class="bfill" style="width:${(amt/maxPay*100)}%"></div></div><span class="bv">${money(amt)}</span></div>
+        `).join('')}</div>
+      </div>
+    </div>
+  </div>`;
+}
+
+/* ============================================================
+   EXPENSES VIEW
+   ============================================================ */
+function expensesTemplate(){
+  return `<div class="view">
+    <div class="view-head"><h2 class="serif">Expenses</h2><button class="btn-primary" id="addExpBtn">+ Add expense</button></div>
+    ${state.addingExp ? expFormTemplate() : ''}
+    <div class="data-table" id="expTableWrap"></div>
+  </div>`;
+}
+function expFormTemplate(){
+  const today = new Date().toISOString().slice(0,10);
+  return `<div class="inline-form">
+    <h3 style="margin-top:0;font-size:14.5px;">New expense</h3>
+    <div class="form-grid">
+      <div class="form-row"><label>Date</label><input id="efDate" type="date" value="${today}"></div>
+      <div class="form-row"><label>Category</label><select id="efCat"><option>Ingredients</option><option>Utilities</option><option>Rent</option><option>Staff</option><option>Maintenance</option><option>Other</option></select></div>
+      <div class="form-row" style="grid-column:1/-1;"><label>Description</label><input id="efDesc"></div>
+      <div class="form-row"><label>Amount (${DB.settings.currency})</label><input id="efAmt" type="number" min="0"></div>
+    </div>
+    <div class="form-actions">
+      <button class="btn-primary" id="efSave">Add expense</button>
+      <button class="btn-outline" id="efCancel">Cancel</button>
+    </div>
+  </div>`;
+}
+function wireExpenses(){
+  document.getElementById('addExpBtn').addEventListener('click', ()=>{ state.addingExp=!state.addingExp; render(); });
+  if(state.addingExp){
+    document.getElementById('efCancel').addEventListener('click', ()=>{ state.addingExp=false; render(); });
+    document.getElementById('efSave').addEventListener('click', ()=>{
+      const desc = val('efDesc'); const amount = parseFloat(val('efAmt'))||0;
+      if(!desc || amount<=0){ toast('Enter a description and amount'); return; }
+      DB.expenses.push({ id: uid('exp'), date: document.getElementById('efDate').value, category: document.getElementById('efCat').value, desc, amount });
+      saveDB(); state.addingExp=false; render(); toast('Expense added');
+    });
+  }
+  renderExpTable();
+}
+function renderExpTable(){
+  const wrap = document.getElementById('expTableWrap');
+  const sorted = [...DB.expenses].sort((a,b)=> (b.date||'').localeCompare(a.date||''));
+  const total = DB.expenses.reduce((s,e)=>s+e.amount,0);
+  wrap.innerHTML = `
+    <div class="drow dhead exprow"><span>Date</span><span>Category</span><span>Description</span><span>Amount</span><span></span></div>
+    ${sorted.map(e=>`
+      <div class="drow exprow">
+        <span>${e.date}</span>
+        <span><span class="tag-pill">${e.category}</span></span>
+        <span>${e.desc}</span>
+        <span>${money(e.amount)}</span>
+        <span class="dcell-actions"><button class="pillbtn" data-del="${e.id}">🗑</button></span>
+      </div>
+    `).join('') || `<div class="drow"><span class="muted">No expenses logged yet.</span></div>`}
+    ${DB.expenses.length ? `<div class="drow exprow" style="font-weight:800;background:var(--panel-2);"><span></span><span></span><span>Total</span><span>${money(total)}</span><span></span></div>` : ''}
+  `;
+  wrap.querySelectorAll('[data-del]').forEach(b=>b.addEventListener('click', ()=>{
+    DB.expenses = DB.expenses.filter(x=>x.id!==b.dataset.del);
+    saveDB(); renderExpTable(); toast('Expense removed');
+  }));
+}
+
+/* ============================================================
+   SUPPLIERS VIEW
+   ============================================================ */
+function suppliersTemplate(){
+  return `<div class="view">
+    <div class="view-head"><h2 class="serif">Suppliers</h2><button class="btn-primary" id="addSupBtn">+ Add supplier</button></div>
+    ${state.addingSup ? supFormTemplate() : ''}
+    <div class="data-table" id="supTableWrap"></div>
+  </div>`;
+}
+function supFormTemplate(){
+  return `<div class="inline-form">
+    <h3 style="margin-top:0;font-size:14.5px;">New supplier</h3>
+    <div class="form-grid">
+      <div class="form-row"><label>Name</label><input id="sfName"></div>
+      <div class="form-row"><label>Contact person</label><input id="sfContact"></div>
+      <div class="form-row"><label>Phone</label><input id="sfPhone"></div>
+      <div class="form-row" style="grid-column:1/-1;"><label>Items supplied</label><input id="sfItems" placeholder="e.g. Beef, Mutton, Chicken"></div>
+    </div>
+    <div class="form-actions">
+      <button class="btn-primary" id="sfSave">Add supplier</button>
+      <button class="btn-outline" id="sfCancel">Cancel</button>
+    </div>
+  </div>`;
+}
+function wireSuppliers(){
+  document.getElementById('addSupBtn').addEventListener('click', ()=>{ state.addingSup=!state.addingSup; render(); });
+  if(state.addingSup){
+    document.getElementById('sfCancel').addEventListener('click', ()=>{ state.addingSup=false; render(); });
+    document.getElementById('sfSave').addEventListener('click', ()=>{
+      const name = val('sfName'); if(!name){ toast('Name is required'); return; }
+      DB.suppliers.push({ id: uid('sup'), name, contact: val('sfContact'), phone: val('sfPhone'), items: val('sfItems') });
+      saveDB(); state.addingSup=false; render(); toast('Supplier added');
+    });
+  }
+  renderSupTable();
+}
+function renderSupTable(){
+  const wrap = document.getElementById('supTableWrap');
+  wrap.innerHTML = `
+    <div class="drow dhead suprow"><span>Name</span><span>Contact</span><span>Phone</span><span>Items supplied</span><span></span></div>
+    ${DB.suppliers.map(s=>`
+      <div class="drow suprow">
+        <span>${s.name}</span>
+        <span>${s.contact||'—'}</span>
+        <span>${s.phone||'—'}</span>
+        <span>${s.items||'—'}</span>
+        <span class="dcell-actions"><button class="pillbtn" data-del="${s.id}">🗑</button></span>
+      </div>
+    `).join('') || `<div class="drow"><span class="muted">No suppliers added yet.</span></div>`}
+  `;
+  wrap.querySelectorAll('[data-del]').forEach(b=>b.addEventListener('click', ()=>{
+    DB.suppliers = DB.suppliers.filter(x=>x.id!==b.dataset.del);
+    saveDB(); renderSupTable(); toast('Supplier removed');
+  }));
+}
+
+/* ============================================================
+   SETTINGS VIEW
+   ============================================================ */
+function settingsTemplate(){
+  const s = DB.settings;
+  return `<div class="view">
+    <div class="view-head"><h2 class="serif">Settings</h2></div>
+    <div class="inline-form" style="max-width:640px;">
+      <h3 style="margin-top:0;font-size:14.5px;">Restaurant &amp; POS</h3>
+      <div class="form-grid">
+        <div class="form-row"><label>Restaurant name</label><input id="setName" value="${escapeAttr(s.name)}"></div>
+        <div class="form-row"><label>Tagline</label><input id="setTag" value="${escapeAttr(s.tagline)}"></div>
+        <div class="form-row"><label>Currency symbol</label><input id="setCur" value="${escapeAttr(s.currency)}" maxlength="3"></div>
+        <div class="form-row"><label>Service charge %</label><input id="setSvc" type="number" min="0" max="100" value="${s.servicePct}"></div>
+      </div>
+      <div class="form-actions">
+        <button class="btn-primary" id="saveSettingsBtn">Save settings</button>
+      </div>
+    </div>
+    <div class="inline-form" style="max-width:640px;border-color:#E3B7A6;">
+      <h3 style="margin-top:0;font-size:14.5px;">Reset prototype data</h3>
+      <p class="muted" style="margin-top:0;">Clears all orders, tables, menu edits, inventory, expenses and suppliers stored in this browser, and restores the original demo data. Staff accounts are kept.</p>
+      <button class="btn-outline" id="resetDataBtn">Reset all demo data</button>
+    </div>
+  </div>`;
+}
+function wireSettings(){
+  document.getElementById('saveSettingsBtn').addEventListener('click', ()=>{
+    DB.settings.name = val('setName') || DB.settings.name;
+    DB.settings.tagline = val('setTag') || DB.settings.tagline;
+    DB.settings.currency = val('setCur') || DB.settings.currency;
+    DB.settings.servicePct = parseFloat(val('setSvc'))||0;
+    saveDB(); syncChrome();
+    toast('Settings saved');
+  });
+  document.getElementById('resetDataBtn').addEventListener('click', ()=>{
+    if(!confirm('Reset all data back to the demo defaults? This cannot be undone.')) return;
+    const keepUsers = DB.users;
+    localStorage.removeItem(DB_KEY);
+    loadDB();
+    DB.users = keepUsers;
+    saveDB();
+    syncChrome();
+    state.cart=[]; state.discount=0; state.status='New';
+    state.table = DB.tables[0].id;
+    state.orderId = nextOrderId();
+    render();
+    toast('Data reset');
+  });
+}
+
+/* ============================================================
+   USERS & ROLES VIEW (Super Admin only)
+   ============================================================ */
+const ROLE_OPTIONS = ['Manager','Cashier','Founder','Super Admin'];
+function usersTemplate(){
+  return `<div class="view">
+    <div class="view-head"><h2 class="serif">Users &amp; Roles</h2><button class="btn-primary" id="addUserBtn">+ Add account</button></div>
+    <p class="muted" style="margin-top:-8px;">These logins are stored in this browser only, for now — moving to Supabase later will make them work across every device securely.</p>
+    ${state.addingUser ? userFormTemplate() : ''}
+    <div class="data-table" id="userTableWrap"></div>
+  </div>`;
+}
+function userFormTemplate(){
+  const editing = state.editingUserId ? DB.users.find(u=>u.id===state.editingUserId) : null;
+  const d = editing || {username:'',password:'',name:'',role:'Cashier',active:true};
+  return `<div class="inline-form">
+    <h3 style="margin-top:0;font-size:14.5px;">${editing?'Edit account':'New account'}</h3>
+    <div class="form-grid">
+      <div class="form-row"><label>Username</label><input id="ufUsername" value="${escapeAttr(d.username)}"></div>
+      <div class="form-row"><label>Password</label><input id="ufPassword" type="text" value="${editing?'':escapeAttr(d.password)}" placeholder="${editing?'Leave blank to keep current':''}"></div>
+      <div class="form-row"><label>Full name</label><input id="ufName" value="${escapeAttr(d.name)}"></div>
+      <div class="form-row"><label>Role</label><select id="ufRole">${ROLE_OPTIONS.map(r=>`<option ${r===d.role?'selected':''}>${r}</option>`).join('')}</select></div>
+      <div class="form-row"><label>Custom title (optional)</label><input id="ufCustomRole" placeholder="Overrides Role above if filled"></div>
+      <div class="form-row"><label><input type="checkbox" id="ufActive" ${d.active!==false?'checked':''}> Active (can log in)</label></div>
+    </div>
+    <div class="form-actions">
+      <button class="btn-primary" id="ufSave">${editing?'Save changes':'Create account'}</button>
+      <button class="btn-outline" id="ufCancel">Cancel</button>
+    </div>
+  </div>`;
+}
+function wireUsers(){
+  document.getElementById('addUserBtn').addEventListener('click', ()=>{
+    state.editingUserId = null; state.addingUser = !state.addingUser; render();
+  });
+  if(state.addingUser){
+    document.getElementById('ufCancel').addEventListener('click', ()=>{ state.addingUser=false; state.editingUserId=null; render(); });
+    document.getElementById('ufSave').addEventListener('click', ()=>{
+      const username = val('ufUsername'); const name = val('ufName');
+      const role = val('ufCustomRole') || document.getElementById('ufRole').value;
+      const active = document.getElementById('ufActive').checked;
+      const pw = val('ufPassword');
+      if(!username || !name){ toast('Username and full name are required'); return; }
+      const dupe = DB.users.find(u=>u.username===username && u.id!==state.editingUserId);
+      if(dupe){ toast('That username is already taken'); return; }
+      if(state.editingUserId){
+        const u = DB.users.find(x=>x.id===state.editingUserId);
+        Object.assign(u, {username, name, role, active});
+        if(pw) u.password = pw;
+      } else {
+        if(!pw){ toast('Password is required for a new account'); return; }
+        DB.users.push({ id: uid('user'), username, password: pw, name, role, active });
+      }
+      saveDB();
+      state.addingUser=false; state.editingUserId=null;
+      render();
+      toast('Account saved');
+    });
+  }
+  renderUsersTable();
+}
+function renderUsersTable(){
+  const wrap = document.getElementById('userTableWrap');
+  wrap.innerHTML = `
+    <div class="drow dhead suprow"><span>Username</span><span>Name</span><span>Role</span><span>Active</span><span></span></div>
+    ${DB.users.map(u=>`
+      <div class="drow suprow">
+        <span>${u.username}</span>
+        <span>${u.name}</span>
+        <span><span class="tag-pill">${u.role}</span></span>
+        <span>${u.active!==false ? '✅' : '🚫'}</span>
+        <span class="dcell-actions">
+          <button class="pillbtn" data-edit="${u.id}" title="Edit">✎</button>
+          <button class="pillbtn" data-del="${u.id}" title="Delete">🗑</button>
+        </span>
+      </div>
+    `).join('')}
+  `;
+  wrap.querySelectorAll('[data-edit]').forEach(b=>b.addEventListener('click', ()=>{
+    state.editingUserId = b.dataset.edit; state.addingUser = true; render();
+  }));
+  wrap.querySelectorAll('[data-del]').forEach(b=>b.addEventListener('click', ()=>{
+    const target = DB.users.find(u=>u.id===b.dataset.del);
+    if(currentUser && target.id===currentUser.id){ toast("You can't delete the account you're logged in as"); return; }
+    const remainingSuperAdmins = DB.users.filter(u=>u.role==='Super Admin' && u.id!==target.id && u.active!==false);
+    if(target.role==='Super Admin' && remainingSuperAdmins.length===0){ toast('At least one active Super Admin must remain'); return; }
+    if(!confirm('Delete the account "'+target.username+'"?')) return;
+    DB.users = DB.users.filter(u=>u.id!==target.id);
+    saveDB(); renderUsersTable(); toast('Account deleted');
+  }));
+}
+
+/* ============================================================
+   BOOT
+   ============================================================ */
+document.getElementById('loginBrandName').textContent = DB.settings.name;
+document.getElementById('loginBrandTag').textContent = DB.settings.tagline;
+
+document.getElementById('loginSubmit').addEventListener('click', attemptLogin);
+document.getElementById('loginPass').addEventListener('keydown', e=>{ if(e.key==='Enter') attemptLogin(); });
+document.getElementById('loginUser').addEventListener('keydown', e=>{ if(e.key==='Enter') attemptLogin(); });
+
+function attemptLogin(){
+  const username = document.getElementById('loginUser').value.trim();
+  const password = document.getElementById('loginPass').value;
+  const ok = doLogin(username, password);
+  if(ok){ showApp(); }
+  else { document.getElementById('loginError').textContent = 'Invalid username or password.'; }
+}
+
+currentUser = loadSession();
+if(currentUser){ showApp(); } else { showLogin(); }
+</script>
+</body>
+</html>
