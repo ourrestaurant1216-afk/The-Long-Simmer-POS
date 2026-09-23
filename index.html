@@ -499,13 +499,19 @@ function fromUserRow(u){ return {id:u.id, username:u.username, password:u.passwo
 
 /* ---------- generic diff-sync: makes remote table match a local array ---------- */
 async function syncCollection(table, rows){
-  try{
-    const {data: remote} = await sb.from(table).select('id');
-    const localIds = new Set(rows.map(r=>String(r.id)));
-    const toDelete = (remote||[]).filter(r=>!localIds.has(String(r.id))).map(r=>r.id);
-    if(toDelete.length) await sb.from(table).delete().in('id', toDelete);
-    if(rows.length) await sb.from(table).upsert(rows.map(rowMap[table]));
-  }catch(e){ console.error('sync failed for '+table, e); }
+  const {data: remote, error: selErr} = await sb.from(table).select('id');
+  if(selErr){ console.error('read failed for '+table, selErr); toast('Database error on '+table+': '+selErr.message); return false; }
+  const localIds = new Set(rows.map(r=>String(r.id)));
+  const toDelete = (remote||[]).filter(r=>!localIds.has(String(r.id))).map(r=>r.id);
+  if(toDelete.length){
+    const {error} = await sb.from(table).delete().in('id', toDelete);
+    if(error){ console.error('delete failed for '+table, error); toast('Database error on '+table+': '+error.message); return false; }
+  }
+  if(rows.length){
+    const {error} = await sb.from(table).upsert(rows.map(rowMap[table]));
+    if(error){ console.error('upsert failed for '+table, error); toast('Database error on '+table+': '+error.message); return false; }
+  }
+  return true;
 }
 
 let DB;
@@ -524,6 +530,16 @@ async function loadDB(){
       sb.from('expenses').select('*'),
       sb.from('suppliers').select('*'),
     ]);
+
+    const errors = [sRes,uRes,mRes,tRes,oRes,invRes,expRes,supRes].map(r=>r.error).filter(Boolean);
+    if(errors.length){
+      console.error('Supabase read errors:', errors);
+      DB = fallback;
+      dbReady = false;
+      toast('Database access error: '+errors[0].message+' — check table grants in Supabase');
+      return;
+    }
+
     const settingsRow = (sRes.data && sRes.data[0]) || null;
 
     DB = {
@@ -538,7 +554,7 @@ async function loadDB(){
       suppliers: (supRes.data && supRes.data.length) ? supRes.data.map(fromSupRow) : fallback.suppliers,
     };
 
-    // first-run seeding: push any collection Supabase had nothing for yet
+    // first-run seeding: push any collection Supabase genuinely had nothing for yet
     const seedTasks = [];
     if(!settingsRow) seedTasks.push(sb.from('settings').upsert([rowMap.settings(DB.settings)]));
     if(!uRes.data || !uRes.data.length) seedTasks.push(syncCollection('app_users', DB.users));
@@ -558,18 +574,20 @@ async function loadDB(){
 }
 
 async function saveDB(){
-  try{
-    await Promise.all([
-      sb.from('settings').upsert([rowMap.settings(DB.settings)]),
-      syncCollection('app_users', DB.users),
-      syncCollection('menu_items', DB.menu),
-      syncCollection('restaurant_tables', DB.tables),
-      syncCollection('orders', DB.orders),
-      syncCollection('inventory', DB.inventory),
-      syncCollection('expenses', DB.expenses),
-      syncCollection('suppliers', DB.suppliers),
-    ]);
-  }catch(e){ console.error('saveDB failed', e); }
+  const results = await Promise.all([
+    sb.from('settings').upsert([rowMap.settings(DB.settings)]),
+    syncCollection('app_users', DB.users),
+    syncCollection('menu_items', DB.menu),
+    syncCollection('restaurant_tables', DB.tables),
+    syncCollection('orders', DB.orders),
+    syncCollection('inventory', DB.inventory),
+    syncCollection('expenses', DB.expenses),
+    syncCollection('suppliers', DB.suppliers),
+  ]);
+  if(results[0] && results[0].error){
+    console.error('settings save failed', results[0].error);
+    toast('Database error saving settings: '+results[0].error.message);
+  }
 }
 function nextOrderId(){
   DB.orderCounter = (DB.orderCounter||426) + 1;
